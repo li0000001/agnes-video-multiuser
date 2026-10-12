@@ -2,17 +2,32 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>我的任务</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我的任务 · Agnes Studio</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <nav id="nav"></nav>
   <main>
-    <h1>我的任务</h1>
-    <table>
-      <thead><tr><th>ID</th><th>模型</th><th>模式</th><th>状态</th><th>创建时间</th><th>完成时间</th><th>操作</th></tr></thead>
-      <tbody id="list"></tbody>
-    </table>
+    <div class="page-head">
+      <div>
+        <h1>我的任务</h1>
+        <p class="sub">视频生成中每 2 分钟自动轮询，生成完成可在线播放或下载</p>
+      </div>
+      <a class="btn btn-primary" href="/">✦ 去创作</a>
+    </div>
+
+    <div class="filter-row" id="filters">
+      <button type="button" class="chip active" data-f="all">全部</button>
+      <button type="button" class="chip" data-f="video">视频</button>
+      <button type="button" class="chip" data-f="image">图像</button>
+      <button type="button" class="chip" data-f="active">生成中</button>
+      <span class="dim" style="font-size:12.5px;margin-left:auto" id="autoHint"></span>
+    </div>
+
+    <div id="listArea">
+      <div class="loading"><span class="spinner spinner-lg"></span><span>加载任务…</span></div>
+    </div>
   </main>
   <script src="/js/auth.js"></script>
   <script src="/js/tasks.js"></script>

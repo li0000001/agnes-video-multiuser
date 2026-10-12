@@ -2,19 +2,35 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>注册</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>注册 · Agnes Studio</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <nav><a href="/">首页</a> <a href="/login.html">登录</a></nav>
+  <nav id="nav"></nav>
   <main>
-    <h1>注册</h1>
-    <form id="regForm">
-      <input type="email" name="email" placeholder="邮箱" required>
-      <input type="password" name="password" placeholder="密码（至少6位）" required>
-      <button type="submit">注册</button>
-    </form>
-    <div id="msg"></div>
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <span class="logo-mark">A</span>
+          <h1>创建账号</h1>
+          <p>第一位注册的用户自动成为管理员</p>
+        </div>
+        <form id="regForm">
+          <div class="field">
+            <label for="email">邮箱</label>
+            <input id="email" type="email" name="email" placeholder="you@example.com" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="password">密码</label>
+            <input id="password" type="password" name="password" placeholder="至少 6 位" required minlength="6" autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg btn-block">注 册</button>
+          <div id="msg" class="form-error"></div>
+        </form>
+        <div class="auth-foot">已有账号？<a href="/login.html">去登录 →</a></div>
+      </div>
+    </div>
   </main>
   <script src="/js/auth.js"></script>
   <script>bindRegister();</script>

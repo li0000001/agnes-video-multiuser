@@ -2,22 +2,60 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>密钥池</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>密钥池 · Agnes Studio</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <nav id="nav"></nav>
   <main>
-    <h1>密钥池</h1>
-    <form id="addKeyForm">
-      <input name="name" placeholder="备注（可选）">
-      <input name="apiKey" placeholder="Agnes API Key" required>
-      <button type="submit">添加密钥</button>
-    </form>
-    <table>
-      <thead><tr><th>备注</th><th>密钥</th><th>状态</th><th>占用</th><th>失败</th><th>上次使用</th><th>创建时间</th><th>操作</th></tr></thead>
-      <tbody id="list"></tbody>
-    </table>
+    <div class="page-head">
+      <div>
+        <h1>密钥池</h1>
+        <p class="sub">每个用户维护自己的 Agnes API Key，系统自动轮转调度、互不干扰</p>
+      </div>
+    </div>
+
+    <div class="layout-2col">
+      <section>
+        <div class="filter-row" style="margin-bottom:16px">
+          <button type="button" class="chip active" data-f="all">全部</button>
+          <button type="button" class="chip" data-f="active">启用中</button>
+          <button type="button" class="chip" data-f="disabled">已禁用</button>
+          <button type="button" class="chip" data-f="busy">占用中</button>
+        </div>
+        <div id="listArea">
+          <div class="loading"><span class="spinner spinner-lg"></span><span>加载密钥…</span></div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="card side-card">
+          <h3><span class="ic">＋</span>添加密钥</h3>
+          <form id="addKeyForm">
+            <div class="field">
+              <label for="kName">备注</label>
+              <input id="kName" name="name" placeholder="如：主号 / 小号 1（可选）">
+            </div>
+            <div class="field">
+              <label for="kKey">Agnes API Key</label>
+              <input id="kKey" name="apiKey" placeholder="sk-..." required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="addBtn">＋ 添加到密钥池</button>
+            <div id="msg" class="form-error"></div>
+          </form>
+        </div>
+        <div class="card side-card">
+          <h3><span class="ic">◈</span>调度规则</h3>
+          <ul class="tip-list">
+            <li>优先使用<b>空闲时间最早</b>的密钥</li>
+            <li>任务执行期间密钥标记占用，避免并发冲突</li>
+            <li>视频完成 / 失败后自动释放</li>
+            <li>密钥以 AES-GCM 加密存储，仅后台可见掩码</li>
+          </ul>
+        </div>
+      </aside>
+    </div>
   </main>
   <script src="/js/auth.js"></script>
   <script src="/js/keys.js"></script>

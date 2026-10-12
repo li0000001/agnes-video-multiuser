@@ -2,15 +2,17 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>任务详情</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>任务详情 · Agnes Studio</title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <nav id="nav"></nav>
   <main>
-    <h1>任务详情</h1>
-    <div id="info"></div>
-    <div id="player"></div>
+    <a class="back-link" href="/tasks.html">← 返回任务列表</a>
+    <div id="root">
+      <div class="loading"><span class="spinner spinner-lg"></span><span>加载任务…</span></div>
+    </div>
   </main>
   <script src="/js/auth.js"></script>
   <script src="/js/task-detail.js"></script>
