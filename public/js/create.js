@@ -7,13 +7,13 @@ const PLACEHOLDER = {
   reference: '描述如何使用参考图，例如：保持 <Picture 1> 中人物的外貌，让她走进 <Picture 2> 的街道场景'
 };
 const HINT = {
-  image: '同步生成，通常 5~30 秒返回',
+  image: '提交后自动排队生成，通常 1~7 分钟出图',
   text: '视频任务异步生成，提交后到「我的任务」查看进度',
   keyframe: '提示词聚焦「变化与运动」效果最佳',
   reference: '在提示词中用 <span class="code">&lt;Picture N&gt;</span> 引用第 N 张图'
 };
 const TIPS = {
-  image: ['Image 2.5 Flash 模型，同步返回成图', '支持 1K / 2K / 3K / 4K 尺寸与 8 种画幅', '当前官方定价 $0（免费）'],
+  image: ['Image 2.5 Flash 模型，提交后排队自动出图', '支持 1K / 2K / 3K / 4K 尺寸与 8 种画幅', '当前官方定价 $0（免费）'],
   text: ['Video 2.5 Flash 文生视频', '720P 走 Flash 免费模型', '1080P / 1K / 2K 自动切换 agnes-video-2.5 付费版', '时长 4~12 秒，支持 6 种画幅'],
   keyframe: ['上传首帧和/或尾帧（至少一张），模型补全中间运动', '提示词描述两个画面之间的变化', '素材会以随机地址公开分发给 Agnes 抓取'],
   reference: ['最多 5 张参考图，用 &lt;Picture N&gt; 引用第 N 张', '可保持角色 / 场景 / 风格一致性', '素材会以随机地址公开分发给 Agnes 抓取']
@@ -227,8 +227,8 @@ $('#createForm').onsubmit = async e => {
       toast(t, 'err');
       return;
     }
-    toast(mode === 'image' ? '图像已生成！' : '任务已提交，正在生成…', 'ok');
-    setTimeout(() => location.href = '/tasks.html', mode === 'image' ? 600 : 400);
+    toast(mode === 'image' ? '任务已提交，排队生成中…' : '任务已提交，正在生成…', 'ok');
+    setTimeout(() => location.href = '/tasks.html', 500);
   }catch(err){
     showMsg(err.message || '网络错误');
     toast(err.message || '网络错误', 'err');

@@ -40,7 +40,9 @@ function agnesError(res: Response, data: any, raw: string, fallback: string) {
   if (!detail) detail = `${fallback}：Agnes 返回 HTTP ${status} 且无错误详情`;
   const hint = status === 401 || status === 403
     ? `（认证被拒绝，请到「密钥池」核对 Key 是否复制完整、是否为 Agnes APIHUB 的 Key）`
-    : '';
+    : status === 429
+      ? '（API 限流中，约 5~12 分钟后自动恢复，请稍后再试）'
+      : '';
   return json({ error: `${detail}${hint}`, agnesStatus: status }, status);
 }
 
@@ -62,63 +64,20 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   return await createVideoTask(request, env, user, prompt, body, origin);
 };
 
-/** 文生图：同步调用 Agnes Image，完成后落 R2，任务直接 done */
+/** 文生图：任务入队（status='pending'），由 /api/cron/poll 每轮逐张异步生成（规避限流 429 与长耗时同步接口） */
 async function createImageTask(request: Request, env: any, user: any, prompt: string, body: any, origin: string) {
   const size = IMAGE_SIZES.includes(String(body.image_size || body.size || '').toUpperCase())
     ? String(body.image_size || body.size).toUpperCase() : '1K';
   const ratioRaw = String(body.ratio || body.aspect_ratio || '');
   const ratio = IMAGE_RATIOS.includes(ratioRaw) ? ratioRaw : undefined;
 
-  const key = await pickIdleKey(env, user.id);
-  if (!key) return json({ error: '当前没有可用的空闲 API Key' }, 400);
+  const params = { type: 'image', prompt, image_size: size, ratio: ratio || '1:1', nra: 0 };
+  const ins = await env.DB.prepare(`
+    INSERT INTO tasks(user_id,video_id,model,mode,status,params_json,poll_count,created_at)
+    VALUES(?,?,?,'image','pending',?,0,datetime('now'))
+  `).bind(user.id, 'img_' + Date.now(), IMAGE_MODEL, JSON.stringify(params)).run();
 
-  const plain = (await decryptApiKey(key.key_enc, env.ENC_KEY)).replace(/\s+/g, '');
-  await env.DB.prepare('UPDATE api_keys SET in_use=1, last_used_at=datetime("now"), updated_at=datetime("now") WHERE id=? AND user_id=?').bind(key.id, user.id).run();
-
-  let taskRow: any = null;
-  try {
-    const payload: any = { model: IMAGE_MODEL, prompt, size, extra_body: { response_format: 'url' } };
-    if (ratio) payload.ratio = ratio;
-
-    const agRes = await fetch('https://apihub.agnes-ai.com/v1/images/generations', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${plain}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const agText = await agRes.text().catch(() => '');
-    let agData: any = {};
-    try { agData = agText ? JSON.parse(agText) : {}; } catch { /* 保留原文 */ }
-    if (!agRes.ok) return agnesError(agRes, agData, agText, 'Agnes 图像生成失败');
-
-    const remoteUrl = agData?.data?.[0]?.url;
-    if (!remoteUrl) return json({ error: 'Agnes 未返回图像地址' }, 502);
-
-    // 下载生成结果存入 R2，保证长期可访问
-    let r2Key = '';
-    const imgRes = await fetch(remoteUrl);
-    if (imgRes.ok && imgRes.body) {
-      const ct = imgRes.headers.get('content-type') || 'image/png';
-      const ext = ct.includes('jpeg') || ct.includes('jpg') ? 'jpg' : ct.includes('webp') ? 'webp' : 'png';
-      const d = new Date();
-      r2Key = `images/user_${user.id}/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/img_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      await env.R2.put(r2Key, imgRes.body, { httpMetadata: { contentType: ct } });
-    }
-
-    const params = { type: 'image', prompt, image_size: size, ratio: ratio || '1:1', remote_url: remoteUrl };
-    const ins = await env.DB.prepare(`
-      INSERT INTO tasks(user_id,video_id,model,mode,status,params_json,r2_key,key_id,poll_count,created_at,finished_at)
-      VALUES(?,?,?, 'image', 'done', ?, ?, ?, 0, datetime('now'), datetime('now'))
-    `).bind(user.id, 'img_' + Date.now(), IMAGE_MODEL, JSON.stringify(params), r2Key || null, key.id).run();
-
-    taskRow = { taskId: ins.meta.last_row_id };
-    return json({ ok: true, taskId: ins.meta.last_row_id, model: IMAGE_MODEL, image: true, url: r2Key ? `/api/user/tasks/${ins.meta.last_row_id}/play` : remoteUrl });
-  } catch (e: any) {
-    return json({ error: '图像生成失败：' + (e?.message || String(e)) }, 502);
-  } finally {
-    try {
-      await env.DB.prepare('UPDATE api_keys SET in_use=0, updated_at=datetime("now") WHERE id=? AND user_id=? AND in_use=1').bind(key.id, user.id).run();
-    } catch { /* ignore */ }
-  }
+  return json({ ok: true, taskId: ins.meta.last_row_id, model: IMAGE_MODEL, image: true, queued: true });
 }
 
 /** 视频任务：text / keyframe / reference 三种模式校验后转发 */
