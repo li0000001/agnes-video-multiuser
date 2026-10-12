@@ -52,10 +52,12 @@ function forward(target, method, headers, bodyStr, cb) {
   if (u.origin !== ALLOWED_ORIGIN) { cb(new Error('origin not allowed')); return; }
 
   const outHeaders = {};
+  // 大小写不敏感地归一化请求头（调用方可能传 Authorization / AUTHORIZATION / authorization）
+  const inH = {};
+  for (const k of Object.keys(headers || {})) inH[String(k).toLowerCase()] = headers[k];
   // 只透传必要请求头，避免注入
   for (const k of ['authorization', 'content-type', 'accept']) {
-    const v = headers && headers[k] !== undefined ? headers[k] : headers && headers[k.toUpperCase()];
-    if (v) outHeaders[k] = String(v).slice(0, 4096);
+    if (inH[k]) outHeaders[k] = String(inH[k]).slice(0, 4096);
   }
   if (bodyStr) outHeaders['content-length'] = Buffer.byteLength(bodyStr);
 
