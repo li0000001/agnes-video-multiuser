@@ -1,6 +1,7 @@
 import type { PagesFunction } from '@cloudflare/workers-types';
 import { decryptApiKey } from '../../lib/crypto';
 import { IMAGE_MODEL } from '../../lib/utils';
+import { agnesFetch } from '../../lib/agnes';
 
 export const onRequestGet: PagesFunction = async ({ request, env }) => {
   const batch = Number(env.POLL_BATCH || 15);
@@ -68,7 +69,7 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
       }
       const plain = await decryptApiKey(keyRow.key_enc, env.ENC_KEY);
       const q = new URLSearchParams({ video_id: t.video_id, model_name: t.model });
-      const r = await fetch('https://apihub.agnes-ai.com/agnesapi?' + q.toString(), {
+      const r = await agnesFetch(env, '/agnesapi?' + q.toString(), {
         headers: { 'Authorization': `Bearer ${plain}` }
       });
       const data = await r.json().catch(() => ({}));
@@ -190,7 +191,7 @@ async function runImageTask(env: any, t: any, pj: any) {
     const payload: any = { model: IMAGE_MODEL, prompt: pj.prompt, size: pj.image_size || '1K', extra_body: { response_format: 'url' } };
     if (pj.ratio) payload.ratio = pj.ratio;
 
-    const res = await fetch('https://apihub.agnes-ai.com/v1/images/generations', {
+    const res = await agnesFetch(env, '/v1/images/generations', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${plain}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

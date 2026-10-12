@@ -1,6 +1,7 @@
 import type { PagesFunction } from '@cloudflare/workers-types';
 import { getCurrentUser, requireAuth, json } from '../../../lib/auth';
 import { decryptApiKey } from '../../../lib/crypto';
+import { agnesFetch } from '../../../lib/agnes';
 import {
   chooseModel, absolutize,
   FLASH_MODEL, FULL_MODEL, IMAGE_MODEL,
@@ -137,7 +138,7 @@ async function createVideoTask(request: Request, env: any, user: any, prompt: st
 
   let created = false;
   try {
-    const agRes = await fetch('https://apihub.agnes-ai.com/v1/videos', {
+    const agRes = await agnesFetch(env, '/v1/videos', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${plain}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...params, model })
