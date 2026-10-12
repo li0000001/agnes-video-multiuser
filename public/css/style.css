@@ -46,6 +46,7 @@ body::before{
     var(--bg);
 }
 ::selection{background:rgba(168,85,247,.4)}
+[hidden]{display:none !important}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-thumb{background:#242b45;border-radius:8px;border:2px solid var(--bg)}
 ::-webkit-scrollbar-thumb:hover{background:#313a5e}
