@@ -52,15 +52,16 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
     }
   }
 
-  // 3) 轮询 processing 任务
+  // 3) 轮询 processing 任务（仅视频：图像任务的 video_id 是占位符，绝不能拿去查 Agnes）
   const procs = await env.DB.prepare(`
     SELECT id,user_id,video_id,model,key_id
-    FROM tasks WHERE status='processing' ORDER BY claimed_at ASC LIMIT ?
+    FROM tasks WHERE status='processing' AND (mode IS NULL OR mode!='image') ORDER BY claimed_at ASC LIMIT ?
   `).bind(batch * 2).all();
 
   const jobs = (procs.results || []).map(async (t: any) => {
     try {
       if (!t.key_id || !t.video_id) return;
+      if (String(t.video_id).startsWith('img_')) return;
       const keyRow = await env.DB.prepare('SELECT key_enc,user_id,status FROM api_keys WHERE id=?').bind(t.key_id).first();
       if (!keyRow || keyRow.user_id !== t.user_id || keyRow.status !== 'active') {
         await env.DB.prepare("UPDATE tasks SET status='pending', claimed_at=NULL, key_id=NULL WHERE id=?").bind(t.id).run();
