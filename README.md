@@ -7,13 +7,14 @@
 - 多用户登录注册，用户间数据完全隔离（第一位注册用户自动成为管理员）
 - 独立 API Key 池（可增删改查、禁用/启用），互不干扰
 - 创作台四种模式：**文生图 / 文生视频 / 首尾帧 / 参考图**
-  - 文生图：Image 2.5 Flash 同步生成，支持 1K–4K 尺寸与 8 种画幅，成图转存 R2
+  - 文生图：Image 2.5 Flash 排队异步生成（撞限流自动退避重试），支持 1K–4K 尺寸与 8 种画幅，成图转存 R2
   - 文生视频：时长 4–12 秒、尺寸 720P–2K、6 种画幅自由选择
   - 首尾帧：上传首帧/尾帧（至少一张），模型补全中间运动
   - 参考图：最多 5 张，提示词中 `<Picture N>` 引用
   - 素材自动上传 R2 并经随机地址公开分发给 Agnes 抓取
 - 模型自动路由：超出 Flash 限制（尺寸/参考数量）自动切换 `agnes-video-2.5` 完整版
 - 任务异步生成，后台定时轮询（僵尸回收、密钥占用兜底释放）
+- 出口中继（可选）：Agnes 调用可经自建中继（如 Render 免费层）转发，绕开 Cloudflare 共享出口 IP 的 1015 限流，见 [relay/README.md](relay/README.md)
 - 视频/图像转存 R2，支持在线播放与下载（短时 Presigned URL）
 - 管理员后台：用户管理、全量任务管理、已生成视频管理（删除视频文件释放空间）、系统概览
 - 全站深色 UI：卡片式任务网格、状态自动刷新、Toast 反馈
@@ -104,6 +105,10 @@ GET https://你的Pages域名/api/cron/poll
 ```bash
 wrangler pages deploy ./public
 ```
+
+### 11.（可选）部署出口中继，绕开 1015 限流
+
+apihub 对 Cloudflare 共享出口 IP 存在边缘限流（`error code: 1015`）。将 `relay/` 部署到 Render 免费层，并在 Pages 环境变量配置 `RELAY_URL` 与 `RELAY_SECRET`（与 Render 端一致），所有 Agnes 调用即改走中继出口；未配置时保持直连，功能不受影响。步骤见 [relay/README.md](relay/README.md)。
 
 ## 说明
 
