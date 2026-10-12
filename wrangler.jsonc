@@ -6,7 +6,7 @@
     {
       "binding": "DB",
       "database_name": "agnes_video_db",
-      "database_id": "REPLACE_WITH_YOUR_D1_ID"
+      "database_id": "7e1b4628-55eb-4b80-8e01-5547ae6cf814"
     }
   ],
   "r2_buckets": [
