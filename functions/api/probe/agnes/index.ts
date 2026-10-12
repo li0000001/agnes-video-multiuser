@@ -4,12 +4,15 @@ import type { PagesFunction } from '@cloudflare/workers-types';
 export const onRequestGet: PagesFunction = async ({ request }) => {
   const u = new URL(request.url);
   if (u.searchParams.get('k') !== 'diag-1015') return new Response('not found', { status: 404 });
+  const p = u.searchParams.get('p') === 'chat' ? 'chat' : 'img';
   const t0 = Date.now();
   try {
-    const res = await fetch('https://apihub.agnes-ai.com/v1/images/generations', {
+    const res = await fetch(p === 'chat' ? 'https://apihub.agnes-ai.com/v1/chat/completions' : 'https://apihub.agnes-ai.com/v1/images/generations', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer sk-probe-diag-000000', 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'agnes-image-2.5-flash', prompt: 'probe', size: '1K' })
+      body: JSON.stringify(p === 'chat'
+        ? { model: 'agnes-2.5-flash', messages: [{ role: 'user', content: 'hi' }] }
+        : { model: 'agnes-image-2.5-flash', prompt: 'probe', size: '1K' })
     });
     const text = await res.text();
     return Response.json({
