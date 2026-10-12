@@ -1,5 +1,6 @@
 import type { PagesFunction } from '@cloudflare/workers-types';
 import { getCurrentUser, requireAuth } from '../../../../lib/auth';
+import { serveR2, CT_BY_EXT } from '../../../../lib/r2serve';
 
 const SAFE_EXT = ['mp4', 'webm', 'mov', 'jpg', 'png', 'webp', 'gif'];
 
@@ -18,22 +19,17 @@ export const onRequestGet: PagesFunction = async ({ request, env, params }) => {
     if (!t || t.user_id !== user.id || t.status !== 'done' || !t.r2_key || t.video_deleted_at) {
       return new Response('Not found or not ready', { status: 404 });
     }
-    step = 'ext';
+    step = 'serve';
     const rawExt = String(t.r2_key).split('.').pop() || '';
     const ext = SAFE_EXT.includes(rawExt.toLowerCase()) ? rawExt.toLowerCase() : 'mp4';
     const kind = t.mode === 'image' ? 'image' : 'video';
-    step = 'presign';
-    const expires = Number(env.PRESIGN_EXPIRES || 900);
     const fname = `agnes-${kind}-${id}.${ext}`;
-    const url = await env.R2.getSignedUrl(t.r2_key, {
-      expiresIn: expires,
-      method: 'GET',
-      queryParams: { 'response-content-disposition': `attachment; filename="${fname}"` }
+    return await serveR2(env, t.r2_key, request, {
+      disposition: `attachment; filename="${fname}"`,
+      fallbackCt: CT_BY_EXT[ext]
     });
-    step = 'redirect';
-    return Response.redirect(url, 302);
   } catch (e) {
-    return new Response(JSON.stringify({ diag: true, step, err: String((e && (e as Error).stack) || e) }), {
+    return new Response(JSON.stringify({ diag: true, step, err: String(e && (e as Error).message) || String(e) }), {
       status: 500, headers: { 'content-type': 'application/json' }
     });
   }
