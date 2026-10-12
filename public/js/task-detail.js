@@ -13,6 +13,18 @@ function paramsOf(t){
   try{ return JSON.parse(t.params_json || '{}'); }catch(e){ return {}; }
 }
 
+/* 图片预览降级：/play 失败 → 回退 remote_url → 仍失败则显示手动打开按钮 */
+function imgFallback(el, fb){
+  if(fb && el.dataset.fb !== '1'){
+    el.dataset.fb = '1';
+    setTimeout(() => { el.src = fb; }, 50);
+    return;
+  }
+  el.style.display = 'none';
+  const box = el.parentElement && el.parentElement.querySelector('.img-fail');
+  if(box) box.style.display = 'flex';
+}
+
 function renderTask(t){
   const root = document.getElementById('root');
   const img = isImageTask(t);
@@ -24,8 +36,15 @@ function renderTask(t){
   let media = '';
   if(isDone && src){
     if(img){
+      const fb = (t.r2_key && p.remote_url) ? p.remote_url : '';
       media = `<div class="media-panel">
-        <img src="${esc(src)}" alt="生成结果">
+        <img src="${esc(src)}" alt="生成结果" style="cursor:zoom-in" onclick="window.open(this.src,'_blank')"
+             onerror="imgFallback(this,'${esc(fb)}')">
+        <div class="img-fail" style="display:none;flex-direction:column;gap:12px;align-items:center;padding:36px 0">
+          <span style="font-size:40px">⚠️</span>
+          <span class="muted">图片预览失败（文件可能仍在），可尝试直接打开原图</span>
+          <a class="btn btn-primary" href="${esc(fb || src)}" target="_blank" rel="noopener">打开原图链接</a>
+        </div>
         <div class="form-foot mt">
           <span class="muted" style="font-size:13.5px">${t.r2_key ? '图像已永久存储于 R2' : '临时存储，建议立即下载'}</span>
           <a class="btn btn-primary" href="${esc(src)}" download>⬇ 下载原图</a>
