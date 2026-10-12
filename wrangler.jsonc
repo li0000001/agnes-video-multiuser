@@ -19,6 +19,7 @@
     "SESSION_NAME": "agnes_session",
     "POLL_BATCH": "15",
     "ZOMBIE_MINUTES": "40",
-    "PRESIGN_EXPIRES": "900"
+    "PRESIGN_EXPIRES": "900",
+    "RELAY_URL": "https://agnes-video-multiuser.onrender.com"
   }
 }
