@@ -24,6 +24,9 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   if (exists) return json({ error: '该邮箱已注册' }, 400);
 
   const hash = await hashPwd(password);
-  const res = await env.DB.prepare('INSERT INTO users(email,password_hash,name,role,status,created_at,updated_at) VALUES(?,?,?,?,\'active\',datetime("now"),datetime("now"))').bind(email, hash, email.split('@')[0]).run();
-  return json({ ok: true, userId: res.meta.last_row_id });
+  // 首个注册用户自动成为管理员（引导逻辑，便于 D1 控制台不可用时初始化）
+  const total = await env.DB.prepare('SELECT COUNT(*) AS c FROM users').first() as { c: number } | null;
+  const role = total && Number(total.c) === 0 ? 'admin' : 'user';
+  const res = await env.DB.prepare('INSERT INTO users(email,password_hash,name,role,status,created_at,updated_at) VALUES(?,?,?,?,\'active\',datetime("now"),datetime("now"))').bind(email, hash, email.split('@')[0], role).run();
+  return json({ ok: true, userId: res.meta.last_row_id, bootstrapAdmin: role === 'admin' });
 };

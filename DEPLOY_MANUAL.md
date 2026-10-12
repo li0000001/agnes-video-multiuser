@@ -106,23 +106,30 @@ D1 用于存储用户、密钥池、任务等所有数据。
 
 ## 6. 步骤五：在 Cloudflare 用 Git 集成创建 Pages 项目
 
-1. 打开 [Cloudflare Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers)
-2. 点击 **「Create（创建）」→「Pages」→「Connect to Git（连接 Git）」**
-3. 首次使用会要求授权 GitHub：点击 **「Connect GitHub」**，按提示授权 Cloudflare 访问你的 GitHub 账号（可只授权刚创建的仓库）
-4. 授权完成后，选择仓库：`agnes-video-multiuser`
-5. 点击 **「Begin setup（开始设置）」**
-6. `Project name` 确认为：`agnes-video-multiuser`（最终域名会是 `https://agnes-video-multiuser.pages.dev`）
-7. **Build configuration（构建配置）** 关键三项：
-   - `Framework preset（框架预设）`：**None**
-   - `Build command（构建命令）`：**留空**（本项目无需构建）
-   - `Build output directory（构建输出目录）`：填入 `public`
-8. 其余选项保持默认，点击 **「Save and Deploy（保存并部署）」**
+1. 打开 [Cloudflare Workers & Pages](https://dash.cloudflare.com/?to=/:account/workers-and-pages/create)
+2. 在「创建新项目」对话框中**不要选上面的 GitHub/模板按钮**（那是 Worker 流程，没有「构建输出目录」字段）。看对话框**底部的小字链接**：
+   > 需要使用旧版 Pages 工作流？**继续前往 Pages**
+   点击 **「继续前往 Pages」**
+3. 选择 **「导入现有 Git 存储库」** 下方的「开始使用」
+4. 首次使用会要求授权 GitHub：点击 **「Connect GitHub」**，按提示授权 Cloudflare 访问你的 GitHub 账号（可只授权刚创建的仓库）
+5. 授权完成后（步骤 1 选择存储库）：选中仓库 `agnes-video-multiuser`，点击 **「开始设置」**
+6. 进入步骤 2 **「设置构建和部署」**，`Project name` 确认为：`agnes-video-multiuser`（最终域名会是 `https://agnes-video-multiuser.pages.dev`）
+7. 关键四项：
+   - `生产分支（Production branch）`：**main**
+   - `框架预设（Framework preset）`：**无（None）**
+   - `构建命令（Build command）`：**留空**（本项目无需构建）
+   - `构建输出目录（Build output directory）`：填入 `public`
+8. 其余选项保持默认，点击 **「保存并部署（Save and Deploy）」**
 9. 等待 1～2 分钟，构建完成后点击部署记录，复制顶部显示的 **Pages 域名**，例如：
    ```text
    https://agnes-video-multiuser.pages.dev
    ```
 
 > Cloudflare 会自动检测仓库根目录的 `functions/` 目录并编译为后端接口。这正是「直接上传」做不到、必须走 Git 集成的原因。
+>
+> **判断是否进对了流程**：页面必须出现「生产分支」和「构建输出目录」两个字段。如果你看到的是「构建命令 / 部署命令 `npx wrangler deploy` / 预览命令」，说明进了 **Worker** 的 Git 配置页——返回上一步点「继续前往 Pages」。
+
+**首次部署常见报错**：`Error 8000022: Invalid database UUID (REPLACE_WITH_YOUR_D1_ID)` —— 说明 `wrangler.jsonc` 里 D1 的 `database_id` 还是占位符。把 [D1 控制台] 中 `agnes_video_db` 详情页显示的 UUID 填入 `wrangler.jsonc` 的 `database_id`，提交推送后会自动重新部署（本仓库已填好，一般不会遇到）。
 
 验证：浏览器访问该域名，应能打开「视频生成」首页（而不是 404）。此时接口还没配置绑定，会报错，属正常现象，继续往下走。
 
@@ -150,45 +157,50 @@ a3f7e9028b43d620904f8532aa0e7764c92b58e430b9a43f920d782f66d821ab
 
 ### 7.2 添加 Secret 到 Pages
 
-1. 进入 Pages 项目 `agnes-video-multiuser` → **「Settings（设置）」→「Environment variables（环境变量）」**
-2. 点击 **「Add variables（添加变量）」→「Add secret（添加机密）」**
-3. `Variable name` 填：`ENC_KEY`
-4. `Value` 粘贴刚才生成的 64 位 HEX 字符
-5. 点击 **「Save（保存）」**
+1. 进入 Pages 项目 `agnes-video-multiuser` → **「设置（Settings）」标签 → 「变量和密钥」**
+2. 点击右侧 **「添加」**，弹窗中 `类型` 保持 **「密钥」**
+3. `变量名称` 填：`ENC_KEY`
+4. `值` 粘贴刚才生成的 64 位 HEX 字符
+5. 点击 **「保存（Save）」**（保存后值不可再查看，请自行妥善保存）
 
-> 路径若不同：Workers & Pages → 选择项目 → Settings → Environment variables。
+> 弹窗会提示「此项目的环境变量在通过 wrangler.toml 进行管理，仅机密（加密变量）可以通过仪表板管理」——`POLL_BATCH` 等普通变量来自仓库里的 `wrangler.jsonc`，无需在面板配置；`ENC_KEY` 是密钥，正好走面板。
 
 ---
 
 ## 8. 步骤七：绑定 D1 和 R2 到 Pages
 
-1. Pages 项目 → **「Settings（设置）」→ 左侧「Bindings（绑定）」**
-2. 点击 **「Add（添加）」→「D1 database」**
-   - `Variable name` 填：`DB`（**必须与代码中 `env.DB` 一致**）
-   - `D1 database` 选择：`agnes_video_db`
-   - 保存
-3. 再次点击 **「Add」→「R2 bucket」**
-   - `Variable name` 填：`R2`（**必须与代码中 `env.R2` 一致**）
-   - `R2 bucket` 选择：`agnes-video-r2`
-   - 保存
-4. 绑定保存后会自动触发重新部署，等待部署完成
+**新版 Git 集成流程无需在面板手动绑定**：部署时 Cloudflare 会读取仓库根目录的 `wrangler.jsonc`，其中已声明：
+
+- `d1_databases`：`DB` → `agnes_video_db`（含真实 `database_id`）
+- `r2_buckets`：`R2` → `agnes-video-r2`
+- `vars`：`SESSION_NAME`、`POLL_BATCH`、`ZOMBIE_MINUTES`、`PRESIGN_EXPIRES`
+
+验证：项目 **「设置 → 绑定」** 应显示 `D1 数据库 DB → agnes_video_db` 和 `R2 存储桶 R2 → agnes-video-r2`，且标注「此项目的绑定在通过 wrangler.toml 进行管理」（编辑按钮为灰色属正常）。
+
+> 若绑定缺失或需更换资源，只需改 `wrangler.jsonc` 后提交推送，自动重新部署生效。
 
 ---
 
 ## 9. 步骤八：设置第一个管理员账号
 
+**方式 A（推荐，自动引导）**：代码内置了引导逻辑——**数据库中没有任何用户时，第一个注册的账号自动成为管理员**。
+
 1. 打开你的 Pages 域名（如 `https://agnes-video-multiuser.pages.dev`）
-2. 点击顶部 **「注册」**，用你的邮箱注册一个账号（密码至少 6 位）
-3. 注册成功后**先不要登录**，回到 Cloudflare 控制台
-4. 打开 [D1 Console](https://dash.cloudflare.com/?to=/:account/workers/d1)，进入 `agnes_video_db` → **「Console」** 标签
-5. 粘贴以下命令（换成你刚注册的邮箱）：
+2. 点击顶部 **「注册」**，用你的邮箱注册第一个账号（密码至少 6 位）
+3. 注册接口返回 `bootstrapAdmin: true` 即成功
+4. 直接登录，顶部导航会出现 **「管理员后台」**
+
+> 只有「零用户」状态才会触发自动提权；之后注册的账号都是普通用户，不受影响。如果你在自己注册前已让别人先注册了，用方式 B。
+
+**方式 B（SQL 手动提权）**：打开 [D1 控制台](https://dash.cloudflare.com/?to=/:account/workers/d1)，进入 `agnes_video_db` → **「控制台」** 标签，粘贴（换成目标邮箱）：
 
 ```sql
 UPDATE users SET role='admin' WHERE email='your@email.com';
 ```
 
-6. 点击 **「Execute（执行）」**，显示 `1 row affected` 即成功
-7. 回到网站用该账号登录，顶部导航会出现 **「管理员后台」**，说明管理员设置成功
+点击 **「执行」**，显示 `1 row affected` 即成功。
+
+> 注：2026-10 部分账号的 D1 控制台可能报 `Invalid property: databaseId => Invalid uuid`（仪表板故障），此时用方式 A 即可，或稍后重试控制台。
 
 ---
 
