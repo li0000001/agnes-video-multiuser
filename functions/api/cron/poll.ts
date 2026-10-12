@@ -53,9 +53,12 @@ export const onRequestGet: PagesFunction = async ({ request, env }) => {
   }
 
   // 3) 轮询 processing 任务（仅视频：图像任务的 video_id 是占位符，绝不能拿去查 Agnes）
+  //    每个视频任务 60 秒内只查一次状态——页面高频驱动时也不会超出账号视频 RPM=1
   const procs = await env.DB.prepare(`
     SELECT id,user_id,video_id,model,key_id
-    FROM tasks WHERE status='processing' AND (mode IS NULL OR mode!='image') ORDER BY claimed_at ASC LIMIT ?
+    FROM tasks WHERE status='processing' AND (mode IS NULL OR mode!='image')
+      AND (last_poll_at IS NULL OR last_poll_at < datetime('now','-60 seconds'))
+    ORDER BY claimed_at ASC LIMIT ?
   `).bind(batch * 2).all();
 
   const jobs = (procs.results || []).map(async (t: any) => {

@@ -66,7 +66,7 @@ function renderTask(t){
   }else{
     media = `<div class="media-panel"><div class="media-wait">
       <span class="spinner spinner-lg"></span>
-      <span>${t.status === 'pending' ? '排队等待认领…' : '正在生成，每 2 分钟自动轮询'}</span>
+      <span>${t.status === 'pending' ? '排队等待认领…' : '正在生成，自动刷新中…'}</span>
       <span class="dim" style="font-size:12.5px">本页将自动刷新</span>
     </div></div>`;
   }

@@ -61,11 +61,11 @@ async function load(){
     }
     allTasks = j.tasks || [];
     render();
-    // 有活动任务则 5 秒自动刷新；顺带触发轮询（cron 未配置时页面开着也能自驱动队列，30 秒节流）
+    // 有活动任务则 5 秒自动刷新；顺带触发轮询（cron 未配置时页面开着也能自驱动队列，10 秒节流）
     const active = allTasks.some(t => t.status === 'pending' || t.status === 'processing');
     if(active && !timer) timer = setInterval(load, 5000);
     if(!active && timer){ clearInterval(timer); timer = null; }
-    if(active && Date.now() - lastCronPing > 30000){
+    if(active && Date.now() - lastCronPing > 10000){
       lastCronPing = Date.now();
       fetch('/api/cron/poll').catch(() => {});
     }
