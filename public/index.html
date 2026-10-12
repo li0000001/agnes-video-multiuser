@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Agnes 视频生成</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="nav"></nav>
+  <main>
+    <h1>视频生成</h1>
+    <form id="createForm">
+      <textarea name="prompt" rows="4" placeholder="提示词（文生视频）" required></textarea>
+      <input name="seconds" placeholder="时长，如 5">
+      <input name="aspect_ratio" placeholder="画幅，如 16:9">
+      <input name="size" placeholder="尺寸，如 720P（Flash 限制 720P）">
+      <textarea id="advJson" rows="6" placeholder='高级：粘贴 Agnes 官方完整参数 JSON（覆盖上方字段）'></textarea>
+      <button type="submit">提交生成</button>
+    </form>
+    <div id="msg"></div>
+  </main>
+  <script src="/js/auth.js"></script>
+  <script src="/js/create.js"></script>
+</body>
+</html>

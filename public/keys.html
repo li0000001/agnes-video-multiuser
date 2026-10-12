@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>密钥池</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav id="nav"></nav>
+  <main>
+    <h1>密钥池</h1>
+    <form id="addKeyForm">
+      <input name="name" placeholder="备注（可选）">
+      <input name="apiKey" placeholder="Agnes API Key" required>
+      <button type="submit">添加密钥</button>
+    </form>
+    <table>
+      <thead><tr><th>备注</th><th>密钥</th><th>状态</th><th>占用</th><th>失败</th><th>上次使用</th><th>创建时间</th><th>操作</th></tr></thead>
+      <tbody id="list"></tbody>
+    </table>
+  </main>
+  <script src="/js/auth.js"></script>
+  <script src="/js/keys.js"></script>
+</body>
+</html>

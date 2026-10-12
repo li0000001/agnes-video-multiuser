@@ -1,0 +1,24 @@
+{
+  "name": "agnes-video-multiuser",
+  "compatibility_date": "2025-10-15",
+  "pages_build_output_dir": "./public",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "agnes_video_db",
+      "database_id": "REPLACE_WITH_YOUR_D1_ID"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "agnes-video-r2"
+    }
+  ],
+  "vars": {
+    "SESSION_NAME": "agnes_session",
+    "POLL_BATCH": "15",
+    "ZOMBIE_MINUTES": "40",
+    "PRESIGN_EXPIRES": "900"
+  }
+}
