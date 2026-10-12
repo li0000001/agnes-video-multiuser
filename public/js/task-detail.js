@@ -68,6 +68,8 @@ function renderTask(t){
   kv.push(['创建时间', fmtTime(t.created_at)]);
   if(t.finished_at) kv.push(['完成时间', fmtTime(t.finished_at)]);
   if(t.status === 'processing' || t.status === 'pending') kv.push(['轮询次数', t.poll_count ?? 0]);
+  if((t.status === 'processing' || t.status === 'pending') && p.last_msg) kv.push(['当前状态', esc(String(p.last_msg))]);
+  if(t.status === 'pending' && p.nra) kv.push(['预计重试', new Date(Number(p.nra) * 1000).toLocaleString('zh-CN', { hour12: false })]);
 
   root.innerHTML = `
     <div class="page-head" style="margin-bottom:20px">
