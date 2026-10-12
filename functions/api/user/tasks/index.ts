@@ -26,9 +26,22 @@ async function pickIdleKey(env: any, userId: number) {
   `).bind(userId).first();
 }
 
-function agnesError(res: Response, data: any, fallback: string) {
-  const detail = data?.detail || data?.error?.message || data?.message || fallback;
-  return json({ error: detail }, res.status || 502);
+function agnesError(res: Response, data: any, raw: string, fallback: string) {
+  const status = res.status || 502;
+  let detail = '';
+  try {
+    if (typeof data === 'string') detail = data;
+    else if (data) {
+      const d = data.detail ?? data.error?.message ?? data.error ?? data.message ?? data.msg ?? data.reason;
+      detail = typeof d === 'string' ? d : d !== undefined && d !== null ? JSON.stringify(d).slice(0, 400) : '';
+    }
+  } catch { /* ignore */ }
+  if (!detail) detail = (raw || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 400);
+  if (!detail) detail = `${fallback}：Agnes 返回 HTTP ${status} 且无错误详情`;
+  const hint = status === 401 || status === 403
+    ? `（认证被拒绝，请到「密钥池」核对 Key 是否复制完整、是否为 Agnes APIHUB 的 Key）`
+    : '';
+  return json({ error: `${detail}${hint}`, agnesStatus: status }, status);
 }
 
 export const onRequestPost: PagesFunction = async ({ request, env }) => {
@@ -59,7 +72,7 @@ async function createImageTask(request: Request, env: any, user: any, prompt: st
   const key = await pickIdleKey(env, user.id);
   if (!key) return json({ error: '当前没有可用的空闲 API Key' }, 400);
 
-  const plain = await decryptApiKey(key.key_enc, env.ENC_KEY);
+  const plain = (await decryptApiKey(key.key_enc, env.ENC_KEY)).replace(/\s+/g, '');
   await env.DB.prepare('UPDATE api_keys SET in_use=1, last_used_at=datetime("now"), updated_at=datetime("now") WHERE id=? AND user_id=?').bind(key.id, user.id).run();
 
   let taskRow: any = null;
@@ -72,8 +85,10 @@ async function createImageTask(request: Request, env: any, user: any, prompt: st
       headers: { 'Authorization': `Bearer ${plain}`, 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    const agData = await agRes.json().catch(() => ({}));
-    if (!agRes.ok) return agnesError(agRes, agData, 'Agnes 图像生成失败');
+    const agText = await agRes.text().catch(() => '');
+    let agData: any = {};
+    try { agData = agText ? JSON.parse(agText) : {}; } catch { /* 保留原文 */ }
+    if (!agRes.ok) return agnesError(agRes, agData, agText, 'Agnes 图像生成失败');
 
     const remoteUrl = agData?.data?.[0]?.url;
     if (!remoteUrl) return json({ error: 'Agnes 未返回图像地址' }, 502);
@@ -158,7 +173,7 @@ async function createVideoTask(request: Request, env: any, user: any, prompt: st
 
   const key = await pickIdleKey(env, user.id);
   if (!key) return json({ error: '当前没有可用的空闲 API Key' }, 400);
-  const plain = await decryptApiKey(key.key_enc, env.ENC_KEY);
+  const plain = (await decryptApiKey(key.key_enc, env.ENC_KEY)).replace(/\s+/g, '');
   await env.DB.prepare('UPDATE api_keys SET in_use=1, last_used_at=datetime("now"), updated_at=datetime("now") WHERE id=? AND user_id=?').bind(key.id, user.id).run();
 
   let created = false;
@@ -168,8 +183,10 @@ async function createVideoTask(request: Request, env: any, user: any, prompt: st
       headers: { 'Authorization': `Bearer ${plain}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...params, model })
     });
-    const agData = await agRes.json().catch(() => ({}));
-    if (!agRes.ok) return agnesError(agRes, agData, 'Agnes 创建任务失败');
+    const agText = await agRes.text().catch(() => '');
+    let agData: any = {};
+    try { agData = agText ? JSON.parse(agText) : {}; } catch { /* 保留原文 */ }
+    if (!agRes.ok) return agnesError(agRes, agData, agText, 'Agnes 创建任务失败');
 
     const videoId = agData.video_id || agData.id || agData.task_id;
     if (!videoId) return json({ error: 'Agnes 返回缺少 video_id' }, 502);

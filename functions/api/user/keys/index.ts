@@ -18,7 +18,8 @@ export const onRequestPost: PagesFunction = async ({ request, env }) => {
   const err = requireAuth(user);
   if (err) return err;
   const body = await request.json().catch(() => ({}));
-  const apiKey = String(body.apiKey || '').trim();
+  // 清洗粘贴污染：去首尾空白、内部换行/空格、包裹引号
+  const apiKey = String(body.apiKey || '').trim().replace(/^['"]+|['"]+$/g, '').replace(/\s+/g, '');
   const name = String(body.name || '').trim() || null;
   if (!apiKey) return json({ error: '请输入 Agnes API Key' }, 400);
   if (!env.ENC_KEY) return json({ error: '未配置 ENC_KEY' }, 500);
